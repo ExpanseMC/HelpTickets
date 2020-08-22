@@ -11,6 +11,7 @@ public class CommandTicket implements CommandExecutor {
 
     public static final Command.Parameterized COMMAND = Command.builder()
             .child(CommandTicketCreate.COMMAND, "create")
+            .child(CommandTicketInfo.COMMAND, "info")
             .child(CommandTicketList.COMMAND, "list")
             .setPermission("helptickets.ticket.base")
             .setExecutor(new CommandTicket())

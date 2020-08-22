@@ -13,7 +13,10 @@ import org.spongepowered.api.entity.living.player.Player;
 
 public class CommandTicketCreate implements CommandExecutor {
 
-    private static final Parameter.Value<String> PARAM_MESSAGE = Parameter.string().setKey("message").build();
+    private static final Parameter.Value<String> PARAM_MESSAGE =
+            Parameter.remainingJoinedStrings()
+                    .setKey("message")
+                    .build();
 
     public static final Command.Parameterized COMMAND = Command.builder()
             .setPermission("helptickets.ticket.create")

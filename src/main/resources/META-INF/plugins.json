@@ -1,6 +1,7 @@
 {
   "plugins": [
     {
+      "loader": "java_plain",
       "id": "helptickets",
       "name": "HelpTickets",
       "version": "0.1.0",
