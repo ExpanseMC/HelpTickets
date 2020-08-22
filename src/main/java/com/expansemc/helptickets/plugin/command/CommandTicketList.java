@@ -1,5 +1,7 @@
 package com.expansemc.helptickets.plugin.command;
 
+import com.expansemc.helptickets.api.HelpTicketsAPI;
+import com.expansemc.helptickets.api.Ticket;
 import com.expansemc.helptickets.plugin.HelpTickets;
 import com.expansemc.helptickets.plugin.config.TicketsConfig;
 import net.kyori.adventure.text.Component;
@@ -30,20 +32,20 @@ public class CommandTicketList implements CommandExecutor {
 
     @Override
     public CommandResult execute(CommandContext context) throws CommandException {
-        Comparator<TicketsConfig.Ticket> sorter = context.getAll(PARAM_SORT_BY).stream()
+        Comparator<Ticket> sorter = context.getAll(PARAM_SORT_BY).stream()
                 .map(SortBy::getComparator)
                 .reduce(Comparator::thenComparing)
                 .orElseThrow(() -> new CommandException(TextComponent.of("No sort-by provided!")));
 
-        List<Component> ticketTexts = HelpTickets.TICKETS_CONFIG.tickets.values().stream()
+        List<Component> contents = HelpTicketsAPI.getInstance().getTickets().stream()
                 .sorted(sorter)
-                .map(ticket -> TextComponent.of("#" + ticket.id + ": " + ticket.getCreatorUser().getName() + " at " + ticket.createdAt))
+                .map(ticket -> TextComponent.of("#" + ticket.getId() + ": " + ticket.getCreator().getName() + " at " + ticket.getCreatedAt()))
                 .collect(Collectors.toList());
 
         PaginationList.builder()
                 .title(TextComponent.of("Tickets", NamedTextColor.DARK_GREEN))
                 .padding(TextComponent.of("-", NamedTextColor.GOLD))
-                .contents(ticketTexts)
+                .contents(contents)
                 .build()
                 .sendTo(context.getCause().getAudience());
 
@@ -51,19 +53,19 @@ public class CommandTicketList implements CommandExecutor {
     }
 
     private enum SortBy {
-        ID((a, b) -> Integer.compare(a.id, b.id)),
-        CREATOR_NAME((a, b) -> a.getCreatorUser().getName().compareTo(b.getCreatorUser().getName())),
-        CREATED_AT((a, b) -> a.createdAt.compareTo(b.createdAt)),
-        IS_ASSIGNED((a, b) -> Integer.compare(a.assigned.size(), b.assigned.size())),
-        IS_OPEN((a, b) -> Boolean.compare(!a.isClosed, !b.isClosed));
+        ID((a, b) -> Integer.compare(a.getId(), b.getId())),
+        CREATOR_NAME((a, b) -> a.getCreator().getName().compareTo(b.getCreator().getName())),
+        CREATED_AT((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt())),
+        IS_ASSIGNED((a, b) -> Integer.compare(a.getAssigned().size(), b.getAssigned().size())),
+        IS_OPEN((a, b) -> Boolean.compare(!a.isClosed(), !b.isClosed()));
 
-        private final Comparator<TicketsConfig.Ticket> comparator;
+        private final Comparator<Ticket> comparator;
 
-        SortBy(Comparator<TicketsConfig.Ticket> comparator) {
+        SortBy(Comparator<Ticket> comparator) {
             this.comparator = comparator;
         }
 
-        public Comparator<TicketsConfig.Ticket> getComparator() {
+        public Comparator<Ticket> getComparator() {
             return comparator;
         }
     }

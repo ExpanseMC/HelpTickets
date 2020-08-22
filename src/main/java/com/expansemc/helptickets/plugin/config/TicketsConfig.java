@@ -1,5 +1,7 @@
 package com.expansemc.helptickets.plugin.config;
 
+import com.expansemc.helptickets.api.Comment;
+import com.expansemc.helptickets.api.HelpTicketsAPI;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -12,88 +14,205 @@ import org.spongepowered.api.world.ServerLocation;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
+/**
+ * Configs are still basically the same (for now?)!
+ */
 @ConfigSerializable
 @DefaultQualifier(NonNull.class)
-public class TicketsConfig {
+public class TicketsConfig implements HelpTicketsAPI {
 
     @Setting
-    private int nextId = 1;
-
+    private int nextTicketId = 1;
     @Setting
-    public Map<Integer, Ticket> tickets = new HashMap<>();
+    private Map<Integer, Ticket> tickets = new HashMap<>();
 
-    public int addTicket(Ticket ticket) {
-        int id = this.nextId++;
-        ticket.id = id;
-        tickets.put(id, ticket);
-        return id;
+    @Override
+    public Collection<Ticket> getTickets() {
+        return this.tickets.values();
+    }
+
+    @Override
+    public Optional<com.expansemc.helptickets.api.Ticket> getTicket(int id) {
+        return Optional.ofNullable(this.tickets.get(id));
+    }
+
+    @Override
+    public void removeTicket(int id) {
+        this.tickets.remove(id);
+    }
+
+    @Override
+    public Ticket addTicket(com.expansemc.helptickets.api.Ticket.Template template) {
+        int ticketId = this.nextTicketId++;
+
+        Ticket ticket = new Ticket(
+                ticketId,
+                template.getCreator().getUniqueId(),
+                template.getCreatedAt(),
+                template.getAssigned().stream().map(User::getUniqueId).collect(Collectors.toSet()),
+                new LinkedHashMap<>(),
+                template.isClosed()
+        );
+
+        for (Comment.Template comment : template.getComments()) {
+            ticket.addComment(comment);
+        }
+
+        this.tickets.put(ticketId, ticket);
+
+        return ticket;
     }
 
     @ConfigSerializable
-    public static class Ticket {
+    public static class Ticket implements com.expansemc.helptickets.api.Ticket {
 
-        /**
-         * The unique id of this ticket.
-         */
         @Setting
-        public int id;
-
-        /**
-         * The player that created this ticket.
-         */
+        private int id;
         @Setting
-        public UUID creator;
-
-        /**
-         * When this ticket was created.
-         */
+        private UUID creator;
         @Setting
-        public Instant createdAt = Instant.now();
-
-        /**
-         * The player(s) that has been assigned this ticket.
-         */
+        private Instant createdAt = Instant.now();
         @Setting
-        public List<UUID> assigned = new ArrayList<>();
-
-        /**
-         * All comments on this ticket.
-         */
+        private Set<UUID> assigned = new HashSet<>();
         @Setting
-        public List<Comment> comments = new ArrayList<>();
-
-        /**
-         * Whether this ticket has been closed.
-         */
+        private int nextCommentId = 1;
         @Setting
-        public boolean isClosed = false;
+        private Map<Integer, Comment> comments = new LinkedHashMap<>();
+        @Setting
+        private boolean closed = false;
 
-        public User getCreatorUser() {
+        public Ticket() {
+        }
+
+        public Ticket(int id, UUID creator, Instant createdAt, Set<UUID> assigned, Map<Integer, Comment> comments, boolean closed) {
+            this.id = id;
+            this.creator = creator;
+            this.createdAt = createdAt;
+            this.assigned = assigned;
+            this.comments = comments;
+            this.closed = closed;
+        }
+
+        @Override
+        public int getId() {
+            return this.id;
+        }
+
+        @Override
+        public User getCreator() {
             return Sponge.getServer().getUserManager().getOrCreate(GameProfile.of(this.creator));
         }
 
-        @ConfigSerializable
-        public static class Comment {
+        @Override
+        public Instant getCreatedAt() {
+            return this.createdAt;
+        }
 
-            /**
-             * The player that created this comment.
-             */
+        @Override
+        public boolean isClosed() {
+            return this.closed;
+        }
+
+        @Override
+        public void setClosed(boolean closed) {
+            this.closed = closed;
+        }
+
+        @Override
+        public Collection<User> getAssigned() {
+            return this.assigned.stream()
+                    .map(uuid -> Sponge.getServer().getUserManager().getOrCreate(GameProfile.of(uuid)))
+                    .collect(Collectors.toList());
+        }
+
+        @Override
+        public void assign(User user) {
+            this.assigned.add(user.getUniqueId());
+        }
+
+        @Override
+        public void unassign(User user) {
+            this.assigned.remove(user.getUniqueId());
+        }
+
+        @Override
+        public Collection<Comment> getComments() {
+            return this.comments.values();
+        }
+
+        @Override
+        public Optional<com.expansemc.helptickets.api.Comment> getComment(int id) {
+            return Optional.ofNullable(this.comments.get(id));
+        }
+
+        @Override
+        public void removeComment(int id) {
+            this.comments.remove(id);
+        }
+
+        @Override
+        public Comment addComment(com.expansemc.helptickets.api.Comment.Template template) {
+            int commentId = this.nextCommentId++;
+
+            Comment comment = new Comment(
+                    commentId,
+                    template.getCreator().getUniqueId(),
+                    template.getMessage(),
+                    template.getLocation().orElse(null)
+            );
+
+            this.comments.put(commentId, comment);
+
+            return comment;
+        }
+
+        @ConfigSerializable
+        public static class Comment implements com.expansemc.helptickets.api.Comment {
+
+            @Setting
+            public int id;
+
             @Setting
             public UUID creator;
 
-            /**
-             * This comment's message.
-             */
             @Setting
             public String message;
 
-            /**
-             * The location where this comment was created.
-             */
             @Setting
             @Nullable
             public ServerLocation location = null;
+
+            public Comment() {
+            }
+
+            public Comment(int id, UUID creator, String message, @Nullable ServerLocation location) {
+                this.id = id;
+                this.creator = creator;
+                this.message = message;
+                this.location = location;
+            }
+
+            @Override
+            public int getId() {
+                return this.id;
+            }
+
+            @Override
+            public User getCreator() {
+                return Sponge.getServer().getUserManager().getOrCreate(GameProfile.of(this.creator));
+            }
+
+            @Override
+            public String getMessage() {
+                return this.message;
+            }
+
+            @Override
+            public Optional<ServerLocation> getLocation() {
+                return Optional.ofNullable(this.location);
+            }
         }
     }
 }

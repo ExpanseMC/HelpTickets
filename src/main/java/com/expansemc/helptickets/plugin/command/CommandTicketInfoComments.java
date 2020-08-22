@@ -5,6 +5,7 @@ import com.expansemc.helptickets.api.Ticket;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.command.CommandExecutor;
@@ -14,11 +15,10 @@ import org.spongepowered.api.command.parameter.CommandContext;
 import org.spongepowered.api.command.parameter.Parameter;
 import org.spongepowered.api.service.pagination.PaginationList;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CommandTicketInfo implements CommandExecutor {
+public class CommandTicketInfoComments implements CommandExecutor {
 
     private static final Parameter.Value<Integer> PARAM_TICKET_ID =
             Parameter.integerNumber()
@@ -31,19 +31,10 @@ public class CommandTicketInfo implements CommandExecutor {
                     .build();
 
     public static final Command.Parameterized COMMAND = Command.builder()
-            .child(CommandTicketInfoAssigned.COMMAND, "assigned")
-            .child(CommandTicketInfoComments.COMMAND, "comments")
-            .setPermission("helptickets.ticket.info.base")
-            .setExecutor(new CommandTicketInfo())
+            .setPermission("helptickets.ticket.info.comments")
+            .setExecutor(new CommandTicketInfoComments())
             .parameters(PARAM_TICKET_ID)
             .build();
-
-    private static final Component FIELD_ID = TextComponent.of("ID: ", NamedTextColor.GRAY);
-    private static final Component FIELD_CREATOR = TextComponent.of("Creator: ", NamedTextColor.GRAY);
-    private static final Component FIELD_CREATED_AT = TextComponent.of("Created At: ", NamedTextColor.GRAY);
-    private static final Component FIELD_ASSIGNED = TextComponent.of("Assigned: ", NamedTextColor.GRAY);
-    private static final Component FIELD_COMMENTS = TextComponent.of("Comments: ", NamedTextColor.GRAY);
-    private static final Component FIELD_IS_CLOSED = TextComponent.of("Closed? ", NamedTextColor.GRAY);
 
     @Override
     public CommandResult execute(CommandContext context) throws CommandException {
@@ -52,18 +43,23 @@ public class CommandTicketInfo implements CommandExecutor {
         Ticket ticket = HelpTicketsAPI.getInstance().getTicket(ticketId)
                 .orElseThrow(() -> new CommandException(TextComponent.of("No ticket with id " + ticketId + ".")));
 
-        List<Component> contents = new ArrayList<>();
-        contents.add(FIELD_ID.append(TextComponent.of(ticketId, NamedTextColor.GREEN)));
-        contents.add(FIELD_CREATOR.append(TextComponent.of(ticket.getCreator().getName(), NamedTextColor.GREEN)));
-        contents.add(FIELD_CREATED_AT.append(TextComponent.of(ticket.getCreatedAt().toString(), NamedTextColor.GREEN)));
-        contents.add(FIELD_ASSIGNED.append(TextComponent.of("[" + ticket.getAssigned().size() + " players]", NamedTextColor.AQUA)
-                .clickEvent(ClickEvent.runCommand("/ticket info assigned " + ticketId))));
-        contents.add(FIELD_COMMENTS.append(TextComponent.of("[" + ticket.getComments().size() + " comments]", NamedTextColor.AQUA)
-                .clickEvent(ClickEvent.runCommand("/ticket info comments " + ticketId))));
-        contents.add(FIELD_IS_CLOSED.append(TextComponent.of(ticket.isClosed(), NamedTextColor.GREEN)));
+        List<Component> contents = ticket.getComments().stream()
+                .map(comment -> {
+                    TextComponent.Builder component =
+                            TextComponent.builder(comment.getCreator().getName() + ": ", NamedTextColor.GREEN)
+                                    .append(TextComponent.of(comment.getMessage(), NamedTextColor.WHITE));
+
+                    comment.getLocation().ifPresent(location -> {
+                        component.hoverEvent(HoverEvent.showText(TextComponent.of("Click to teleport to this comment's location!", NamedTextColor.AQUA)));
+                        component.clickEvent(ClickEvent.runCommand("/ticket teleport " + ticketId + " " + comment.getId()));
+                    });
+
+                    return component.build();
+                })
+                .collect(Collectors.toList());
 
         PaginationList.builder()
-                .title(TextComponent.of("Ticket #" + ticketId, NamedTextColor.DARK_GREEN))
+                .title(TextComponent.of("Comments on Ticket #" + ticketId, NamedTextColor.DARK_GREEN))
                 .padding(TextComponent.of("=", NamedTextColor.GOLD))
                 .contents(contents)
                 .build()
