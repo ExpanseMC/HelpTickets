@@ -2,6 +2,7 @@ package com.expansemc.helptickets.plugin;
 
 import com.expansemc.helptickets.api.Comment;
 import com.expansemc.helptickets.api.HelpTicketsAPI;
+import com.expansemc.helptickets.api.Ticket;
 import com.expansemc.helptickets.plugin.command.CommandTicket;
 import com.expansemc.helptickets.plugin.config.TicketsConfig;
 import org.apache.logging.log4j.LogManager;
@@ -41,6 +42,7 @@ public class HelpTickets {
     @Listener
     public void onRegisterBuilder(RegisterBuilderEvent event) {
         event.register(Comment.Template.Builder.class, CommentTemplateImpl.BuilderImpl::new);
+        event.register(Ticket.Template.Builder.class, TicketTemplateImpl.BuilderImpl::new);
     }
 
     @Listener

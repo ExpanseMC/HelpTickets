@@ -13,6 +13,7 @@ public class CommandTicket implements CommandExecutor {
             .child(CommandTicketCreate.COMMAND, "create")
             .child(CommandTicketInfo.COMMAND, "info")
             .child(CommandTicketList.COMMAND, "list")
+            .child(CommandTicketTeleport.COMMAND, "teleport")
             .setPermission("helptickets.ticket.base")
             .setExecutor(new CommandTicket())
             .build();
