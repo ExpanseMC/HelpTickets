@@ -1,0 +1,28 @@
+{
+  "plugins": [
+    {
+      "id": "helptickets",
+      "name": "HelpTickets",
+      "version": "0.1.0",
+      "main-class": "com.expansemc.helptickets.plugin.HelpTickets",
+      "description": "A ticketing plugin.",
+      "links": {
+        "homepage": "https://ore.spongepowered.org/doot/HelpTickets",
+        "source": "https://github.com/ExpanseMC/HelpTickets",
+        "issues": "https://github.com/ExpanseMC/HelpTickets/issues"
+      },
+      "contributors": [
+        {
+          "name": "doot",
+          "description": "Lead Developer"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "sponge",
+          "version": "8.0.0"
+        }
+      ]
+    }
+  ]
+}
