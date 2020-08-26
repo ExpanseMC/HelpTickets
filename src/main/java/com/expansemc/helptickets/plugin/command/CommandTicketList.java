@@ -2,11 +2,9 @@ package com.expansemc.helptickets.plugin.command;
 
 import com.expansemc.helptickets.api.HelpTicketsAPI;
 import com.expansemc.helptickets.api.Ticket;
-import com.expansemc.helptickets.plugin.HelpTickets;
-import com.expansemc.helptickets.plugin.config.TicketsConfig;
+import com.expansemc.helptickets.plugin.util.Texts;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.command.CommandExecutor;
 import org.spongepowered.api.command.CommandResult;
@@ -22,7 +20,11 @@ import java.util.stream.Collectors;
 public class CommandTicketList implements CommandExecutor {
 
     private static final Parameter.Value<SortBy> PARAM_SORT_BY =
-            Parameter.enumValue(SortBy.class).orDefault(SortBy.ID).consumeAllRemaining().setKey("sort-by").build();
+            Parameter.enumValue(SortBy.class)
+                    .orDefault(SortBy.ID)
+                    .consumeAllRemaining()
+                    .setKey("sort-by")
+                    .build();
 
     public static final Command.Parameterized COMMAND = Command.builder()
             .setPermission("helptickets.ticket.list")
@@ -39,12 +41,12 @@ public class CommandTicketList implements CommandExecutor {
 
         List<Component> contents = HelpTicketsAPI.getInstance().getTickets().stream()
                 .sorted(sorter)
-                .map(ticket -> TextComponent.of("#" + ticket.getId() + ": " + ticket.getCreator().getName() + " at " + ticket.getCreatedAt()))
+                .map(Texts::ticketListItem)
                 .collect(Collectors.toList());
 
         PaginationList.builder()
-                .title(TextComponent.of("Tickets", NamedTextColor.DARK_GREEN))
-                .padding(TextComponent.of("-", NamedTextColor.GOLD))
+                .title(Texts.HEADER_TICKETS)
+                .padding(Texts.PADDING)
                 .contents(contents)
                 .build()
                 .sendTo(context.getCause().getAudience());

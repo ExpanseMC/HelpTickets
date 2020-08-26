@@ -8,6 +8,7 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.util.ResettableBuilder;
 import org.spongepowered.api.world.ServerLocation;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @DefaultQualifier(NonNull.class)
@@ -19,6 +20,11 @@ public interface Comment {
      * The player that created this comment.
      */
     User getCreator();
+
+    /**
+     * When this comment was created.
+     */
+    Instant getCreatedAt();
 
     /**
      * This comment's message.
@@ -38,6 +44,8 @@ public interface Comment {
 
         User getCreator();
 
+        Instant getCreatedAt();
+
         String getMessage();
 
         Optional<ServerLocation> getLocation();
@@ -45,6 +53,8 @@ public interface Comment {
         interface Builder extends ResettableBuilder<Template, Builder> {
 
             Builder creator(User creator);
+
+            Builder createdAt(Instant createdAt);
 
             Builder message(String message);
 

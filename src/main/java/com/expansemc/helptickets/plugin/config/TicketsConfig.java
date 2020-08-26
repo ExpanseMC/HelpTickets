@@ -159,6 +159,7 @@ public class TicketsConfig implements HelpTicketsAPI {
             Comment comment = new Comment(
                     commentId,
                     template.getCreator().getUniqueId(),
+                    template.getCreatedAt(),
                     template.getMessage(),
                     template.getLocation().orElse(null)
             );
@@ -172,24 +173,28 @@ public class TicketsConfig implements HelpTicketsAPI {
         public static class Comment implements com.expansemc.helptickets.api.Comment {
 
             @Setting
-            public int id;
+            private int id;
 
             @Setting
-            public UUID creator;
+            private UUID creator;
 
             @Setting
-            public String message;
+            private Instant createdAt;
+
+            @Setting
+            private String message;
 
             @Setting
             @Nullable
-            public ServerLocation location = null;
+            private ServerLocation location = null;
 
             public Comment() {
             }
 
-            public Comment(int id, UUID creator, String message, @Nullable ServerLocation location) {
+            public Comment(int id, UUID creator, Instant createdAt, String message, @Nullable ServerLocation location) {
                 this.id = id;
                 this.creator = creator;
+                this.createdAt = createdAt;
                 this.message = message;
                 this.location = location;
             }
@@ -202,6 +207,11 @@ public class TicketsConfig implements HelpTicketsAPI {
             @Override
             public User getCreator() {
                 return Sponge.getServer().getUserManager().getOrCreate(GameProfile.of(this.creator));
+            }
+
+            @Override
+            public Instant getCreatedAt() {
+                return this.createdAt;
             }
 
             @Override
